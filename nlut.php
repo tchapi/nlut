@@ -39,7 +39,7 @@ class Transcoder
           'version' => (new \Datetime())->format('Ymd'),
           'zip-command' => '',
           'data' => [
-            'name' => $contents['interactionModel']['languageModel']['invocationName'] . '',
+            'name' => $contents['interactionModel']['languageModel']['invocationName'].'',
             'description' => '',
             'lang' => $this->lang,
           ],
@@ -143,7 +143,20 @@ class Transcoder
         $this->lang = $this->appInfo['data']['lang'];
 
         // Set expressions
-        $this->expressions = $contents['expressions.json'];
+        $this->expressions = ['data' => []];
+        foreach ($contents['expressions.json']['data'] as $ex) {
+            $temp = [
+                'text' => $ex['text'],
+                'entities' => [],
+            ];
+            if (isset($ex['entities'])) {
+                foreach ($ex['entities'] as $en) {
+                    $en['value'] = str_replace('"', '', $en['value']);
+                    $temp['entities'][] = $en;
+                }
+            }
+            $this->expressions['data'][] = $temp;
+        }
         unset($contents['expressions.json']);
 
         // Extract entities
@@ -507,8 +520,8 @@ class Transcoder
                     }
                 }
                 if ($keep) {
-                    $phrases = $phrases + $phrasesTemp;
-                    $params = $params + $paramsTemp;
+                    $phrases = array_merge($phrases, $phrasesTemp);
+                    $params = array_merge($params, $paramsTemp);
                 }
             }
 
@@ -724,7 +737,7 @@ class Transcoder
                     $newContents = $this->toAlexaFile();
                     break;
                 default:
-                    echo "Error : ".$options['format']." is not a valid format.\n\n";
+                    echo 'Error : '.$options['format']." is not a valid format.\n\n";
                     exit;
                     break;
             }
