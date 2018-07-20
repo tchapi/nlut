@@ -24,6 +24,14 @@ class Transcoder
         }
     }
 
+    private function generateGuid()
+    {
+        $charid = strtoupper(bin2hex(openssl_random_pseudo_bytes(16)));
+        $guid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($charid, 4));
+
+        return strtolower($guid);
+    }
+
     private function processAlexaJsonFile(array $contents)
     {
         $this->lang = 'fr'; // Default
@@ -457,11 +465,8 @@ class Transcoder
         ];
 
         foreach ($this->entities as $key => $value) {
-            $charid = strtoupper(bin2hex(openssl_random_pseudo_bytes(16)));
-            $guid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($charid, 4));
-
             $contents['entities/'.$key.'.json'] = [
-              'id' => $guid,
+              'id' => $this->generateGuid(),
               'name' => $key,
               'isOverridable' => true,
               'isEnum' => false,
@@ -480,9 +485,6 @@ class Transcoder
 
         foreach ($this->intents['data']['values'] as $key => $value) {
             $intent = $value['value'];
-            $charid = strtoupper(bin2hex(openssl_random_pseudo_bytes(16)));
-            $guid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($charid, 4));
-
             $parameters = [];
 
             $params = [];
@@ -511,11 +513,8 @@ class Transcoder
             }
 
             foreach ($params as $param) {
-                $charid = strtoupper(bin2hex(openssl_random_pseudo_bytes(16)));
-                $guid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($charid, 4));
-
                 $parameters[] = [
-                      'id' => $guid,
+                      'id' => $this->generateGuid(),
                       'required' => true,
                       'dataType' => '@'.$param,
                       'name' => $param,
@@ -525,7 +524,7 @@ class Transcoder
             }
 
             $contents['intents/'.$intent.'.json'] = [
-                'id' => $guid,
+                'id' => $this->generateGuid(),
                 'name' => $intent,
                 'auto' => true,
                 'contexts' => [],
@@ -550,9 +549,6 @@ class Transcoder
             $contents['intents/'.$intent.'_usersays_'.$this->lang.'.json'] = [];
 
             foreach ($phrases as $phrase) {
-                $charid = strtoupper(bin2hex(openssl_random_pseudo_bytes(16)));
-                $guid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($charid, 4));
-
                 // Construct data from start/end
                 $text = $phrase['text'];
                 $offset = 0;
@@ -578,8 +574,8 @@ class Transcoder
                     $offset -= $entity['end'] - $offset;
                 }
 
-                $contents['intents/'.$key.'_usersays_'.$this->lang.'.json'][] = [
-                    'id' => $guid,
+                $contents['intents/'.$intent.'_usersays_'.$this->lang.'.json'][] = [
+                    'id' => $this->generateGuid(),
                     'data' => $datas,
                     'isTemplate' => false,
                     'count' => 1,
@@ -588,11 +584,8 @@ class Transcoder
             }
         }
 
-        $charid = strtoupper(bin2hex(openssl_random_pseudo_bytes(16)));
-        $guid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($charid, 4));
-
         $contents['intents/Default Fallback Intent.json'] = [
-          'id' => $guid,
+          'id' => $this->generateGuid(),
           'name' => 'Default Fallback Intent',
           'auto' => true,
           'contexts' => [],
