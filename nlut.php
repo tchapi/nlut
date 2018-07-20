@@ -620,18 +620,19 @@ class Transcoder
     private function help()
     {
         echo "🔠  NLU Transcoder 1.0\n";
-        echo "tchap <cyril@joshfire.com>\n\n";
+        echo "tchapi <https://github.com/tchapi>\n\n";
         echo "USAGE\n";
         echo "    ./nlut.php [OPTIONS]\n\n";
         echo "FLAGS:\n";
         echo "    --help    Displays this help message\n\n";
         echo "OPTIONS:\n";
         echo "    --source  <FILE>    The source file (a .zip file or a .json file)\n";
-        echo "    --export  <FILE>    The destination file, if needed\n";
-        echo "    --format  <FORMAT>  The destination format\n\n";
+        echo "    --export  <FILE>    [Optional] The destination file\n";
+        echo "    --format  <FORMAT>  [Optional] The destination format\n\n";
         echo "AVAILABLE FORMATS:\n";
         echo "    DIALOGFLOW\n";
-        echo "    WIT\n\n";
+        echo "    WIT\n";
+        echo "    ALEXA\n\n";
     }
 
     public function run()
@@ -728,6 +729,10 @@ class Transcoder
                 case 'ALEXA':
                     echo "Exporting to the Alexa Skill format\n";
                     $newContents = $this->toAlexaFile();
+                    break;
+                default:
+                    echo "Error : ".$options['format']." is not a valid format.\n\n";
+                    exit;
                     break;
             }
             $this->export($newContents, $options['export']);
