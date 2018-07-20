@@ -13,6 +13,14 @@ _No steps are necessary prior to using the tool._
 
     ./nlut.php --help
 
+### Tests
+
+|                 | Wit   | DialogFlow  | Alexa |
+| --------------- | ----- | ----------- | ----- |
+| **Wit**         |   -   |   -         |   -   |
+| **DialogFlow**  |   -   |   ✅        |   -   |
+| **Alexa**       |   -   |   -         |   ✅  |
+
 ### License
 
 MIT
