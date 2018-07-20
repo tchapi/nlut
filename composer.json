@@ -1,0 +1,15 @@
+{
+    "name": "tchapi/nlu-transcoder",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "tchapi",
+            "email": "regbasket+github@gmail.com"
+        }
+    ],
+    "require": {},
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^2.12"
+    }
+}
