@@ -43,11 +43,13 @@ Transcode a DialogFlow archive into the Wit format
 | ---------------------- | ---------- | ---------------- | ---------- |
 | _from_ **Wit**         |   ✅       |   -              |   -        |
 | _from_ **DialogFlow**  |   ✅       |   ✅             |   -        |
-| _from_ **Alexa**       |   -        |   -              |   ✅       |
+| _from_ **Alexa**       |   ✅       |   -              |   ✅       |
 
 ### Known limitations / bugs
 
   - _Platform_-specific entities (such as `wit/datetime` or DialogFlow's `@sys.duration`) are treated as user-defined entities (`free-text` for Wit, for instance)
+  - Alexa's  `AMAZON.FallbackIntent`, `AMAZON.CancelIntent`, `AMAZON.HelpIntent` and `AMAZON.StopIntent` are ignored when exporting
+  - When exporting from an Alexa skill, expressions (_or samples_) are reconstructed from the first synonym of each slot, thus leading to sentences that can be meaningless in natural language. They are accurate _training-wise_, though.
   - Not tested on high-complexity models
 
 ### License

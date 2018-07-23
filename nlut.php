@@ -45,6 +45,77 @@ class Transcoder
           ],
         ];
 
+        // Get entity for each slot name (will be used later)
+        $slots = [];
+        $slotValues = [];
+        foreach ($contents['interactionModel']['dialog']['intents'] as $intent) {
+            foreach ($intent['slots'] as $slot) {
+                $slots[$slot['name']] = $slot['type'];
+            }
+        }
+        $discoveredEntities = array_values($slots);
+
+        $this->entities = [];
+        foreach ($contents['interactionModel']['languageModel']['types'] as $entity) {
+            $name = $entity['name'];
+            // Store a value for each entity, for expressions later
+            $slotValues[$name] = $entity['values'][0]['name']['value'];
+            $values = [];
+            foreach ($entity['values'] as $value) {
+                $values[] = [
+                    'value' => $value['name']['value'],
+                    'expressions' => isset($value['name']['synonyms']) ? $value['name']['synonyms'] : [],
+                ];
+            }
+            $this->entities[$name] = [
+              'data' => [
+                'lookups' => [
+                  'keywords',
+                ],
+                'name' => $name,
+                'lang' => 'fr',
+                'exotic' => false,
+                'id' => $name,
+                'values' => $values,
+                'doc' => 'User-defined entity',
+                'builtin' => false,
+              ],
+            ];
+        }
+        // if an discovered entity does not have a slot value (ex : AMAZON.DATE)
+        // add a default
+        foreach (array_values($slots) as $item) {
+            if (!isset($slotValues[$item])) {
+                $slotValues[$item] = 'PLACEHOLDER';
+            }
+        }
+        foreach ($discoveredEntities as $key => $value) {
+            if (isset($this->entities[$value])) {
+                continue;
+            }
+            $this->entities[$value] = [
+              'data' => [
+                'lookups' => [
+                  'keywords',
+                ],
+                'name' => $value,
+                'lang' => 'fr',
+                'exotic' => false,
+                'id' => $value,
+                'values' => [
+                  [
+                    'value' => $slotValues[$value],
+                    'expressions' => [
+                      $slotValues[$value],
+                    ],
+                  ],
+                ],
+                'doc' => 'User-defined entity',
+                'builtin' => false,
+              ],
+            ];
+        }
+
         $this->intents = [
           'data' => [
             'lookups' => [
@@ -72,7 +143,6 @@ class Transcoder
 
             foreach ($intent['samples'] as $phrase) {
                 $temp = [
-                    'text' => $phrase,
                     'entities' => [
                         [
                             'entity' => 'intent',
@@ -82,46 +152,28 @@ class Transcoder
                 ];
                 // For each slot
                 $offset = 0;
+                $diffS = 0;
+                $diffL = 0;
+                $realPhrase = '';
                 for ($i = 0; $i < substr_count($phrase, '{'); ++$i) {
                     $pos = strpos($phrase, '{', $offset);
                     $posE = strpos($phrase, '}', $offset);
+                    $slotName = substr($phrase, $pos + 1, $posE - $pos - 1);
+                    $diffL += strlen($slotName) + 2 - strlen($slotValues[$slots[$slotName]]);
                     $temp['entities'][] = [
-                        'entity' => substr($phrase, $pos + 1, $posE - $pos - 1),
-                        'value' => substr($phrase, $pos, $posE - $pos + 1),
-                        'start' => $pos,
-                        'end' => $posE,
+                        'entity' => $slots[$slotName],
+                        'value' => $slotValues[$slots[$slotName]],
+                        'start' => $pos - $diffS,
+                        'end' => $posE - $diffL,
                     ];
+                    $realPhrase .= substr($phrase, $offset, $pos - $offset).$slotValues[$slots[$slotName]];
                     $offset = $posE + 1;
+                    $diffS = $diffL;
                 }
+                $temp['text'] = $realPhrase;
 
                 $this->expressions['data'][] = $temp;
             }
-        }
-
-        $this->entities = [];
-        foreach ($contents['interactionModel']['languageModel']['types'] as $entity) {
-            $name = $entity['name'];
-            $values = [];
-            foreach ($entity['values'] as $value) {
-                $values[] = [
-                    'value' => $value['name']['value'],
-                    'expressions' => isset($value['name']['synonyms']) ? $value['name']['synonyms'] : [],
-                ];
-            }
-            $this->entities[$name] = [
-              'data' => [
-                'lookups' => [
-                  'keywords',
-                ],
-                'name' => $name,
-                'lang' => 'fr',
-                'exotic' => false,
-                'id' => $name,
-                'values' => $values,
-                'doc' => 'User-defined entity',
-                'builtin' => false,
-              ],
-            ];
         }
     }
 
