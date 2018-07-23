@@ -769,7 +769,13 @@ class Transcoder
                 $this->processWitArchive($contents);
             }
         } else {
-            $contents = json_decode(file_get_contents($filename), true);
+            if (file_exists($filename)) {
+                $contents = json_decode(file_get_contents($filename), true);
+            } else {
+                echo 'Error : File '.$filename." does not exist.\n\n";
+                $this->help();
+                exit;
+            }
             $this->type = self::TYPE_ALEXA;
             $this->processAlexaJsonFile($contents);
         }

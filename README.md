@@ -21,6 +21,11 @@ _No steps are necessary prior to using the tool._
 | _from_ **DialogFlow**  |   ✅       |   ✅             |   -        |
 | _from_ **Alexa**       |   -        |   -              |   ✅       |
 
+### Known limitations / bugs
+
+  - _Platform_-specific entities (such as `wit/datetime` or DialogFlow's `@sys.duration`) are treated as user-defined entities (`free-text` for Wit, for instance)
+  - Not tested on high-complexity models
+
 ### License
 
 MIT
