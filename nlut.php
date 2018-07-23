@@ -801,7 +801,7 @@ class Transcoder
                     exit;
                     break;
             }
-            $this->export($newContents, $options['export']);
+            $this->export($newContents, $options['format'], $options['export']);
             echo 'File '.$options['export']." written.\n";
         }
     }
@@ -827,9 +827,9 @@ class Transcoder
         return preg_replace('/^ {4}|\G {4}/Sm', '  ', $json2);
     }
 
-    private function export(array $newContents, string $filename)
+    private function export(array $newContents, string $format, string $filename)
     {
-        if (self::TYPE_ALEXA === $this->type) {
+        if (self::TYPE_ALEXA === $format) {
             $jsonFile = fopen($filename, 'w');
             fwrite($jsonFile, $this->prettify($newContents));
             fclose($jsonFile);
