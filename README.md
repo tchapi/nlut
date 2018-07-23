@@ -13,6 +13,30 @@ _No steps are necessary prior to using the tool._
 
     ./nlut.php --help
 
+Get info on an archive file
+
+    ./nlut.php --source MyWitProject.zip
+    ----------------------------------------
+    This is a Wit.ai archive
+    App name     : MyWitProject
+    Entities     : 17
+    Intents      : 5
+    Expressions  : 3624
+    ----------------------------------------
+
+Transcode a DialogFlow archive into the Wit format
+
+    ./nlut.php --source MyDFArchive.zip --export MyProject.zip --format WIT
+    ----------------------------------------
+    This is a DialogFlow archive
+    App name     : project-13d59
+    Entities     : 17
+    Intents      : 5
+    Expressions  : 3624
+    ----------------------------------------
+    Exporting to the Wit format
+    File MyProject.zip written.
+
 ### Tests
 
 |                        | _to_ Wit   | _to_ DialogFlow  | _to_ Alexa |
