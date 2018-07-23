@@ -188,7 +188,77 @@ class Transcoder
         unset($contents['package.json']);
         array_keys($contents);
 
-        // Parse entities first
+        // Intents and expressions at the same time
+        $this->intents = [
+          'data' => [
+            'lookups' => [
+              'trait',
+            ],
+            'name' => 'intent',
+            'lang' => $this->lang,
+            'exotic' => false,
+            'id' => 'intent',
+            'values' => [],
+            'doc' => 'User-defined entity',
+            'builtin' => false,
+          ],
+        ];
+        $this->expressions = [
+            'data' => [],
+        ];
+        $discoveredEntities = [];
+        $discoveredValues = [];
+        foreach ($contents as $key => $value) {
+            if ('intents' != substr($key, 0, 7)) {
+                continue;
+            }
+            if ('intents/Default Fallback Intent.json' == $key) {
+                continue;
+            }
+            if (substr($key, -15 - strlen($this->lang)) == '_usersays_'.$this->lang.'.json') {
+                $name = substr($key, 8, -15 - strlen($this->lang));
+                foreach ($value as $phrase) {
+                    $entities = [
+                        [
+                            'entity' => 'intent',
+                            'value' => $name,
+                        ],
+                    ];
+                    $nextStart = 0;
+                    $text = '';
+                    foreach ($phrase['data'] as $phraseSegment) {
+                        $text .= $phraseSegment['text'];
+                        if (isset($phraseSegment['alias'])) {
+                            $entities[] = [
+                              'entity' => $phraseSegment['alias'],
+                              'value' => $phraseSegment['text'],
+                              'start' => $nextStart,
+                              'end' => $nextStart + strlen($phraseSegment['text']),
+                            ];
+                            // Add text in values
+                            $discoveredValues[$phraseSegment['alias']][] = $phraseSegment['text'];
+                        }
+                        $nextStart += strlen($phraseSegment['text']);
+                    }
+                    $this->expressions['data'][] = [
+                        'text' => $text,
+                        'entities' => $entities,
+                    ];
+                }
+            } else {
+                $this->intents['data']['values'][] = [
+                  'value' => $value['name'],
+                ];
+            }
+            if (isset($value['responses']) && count($value['responses']) > 0) {
+                foreach ($value['responses'][0]['parameters'] as $param) {
+                    $discoveredEntities[] = $param['name'];
+                }
+            }
+            unset($contents[$key]);
+        }
+
+        // Then parse entities
         $entities = [];
         $values = [];
         foreach ($contents as $key => $value) {
@@ -222,71 +292,39 @@ class Transcoder
             }
             unset($contents[$key]);
         }
-
+        // Add discovered entities
+        foreach (array_unique($discoveredEntities) as $key => $value) {
+            $entities[$value] = [
+              'data' => [
+                'lookups' => [
+                  'free-text',
+                ],
+                'name' => $value,
+                'lang' => $this->lang,
+                'exotic' => false,
+                'id' => $value,
+                'values' => [],
+                'doc' => 'User-defined entity',
+                'builtin' => false,
+              ],
+            ];
+        }
         foreach ($entities as $key => $value) {
             $this->entities[$key] = $value;
-            $this->entities[$key]['data']['values'] = $values[$key];
-        }
-
-        // Then intents and expressions at the same time
-        $this->intents = [
-          'data' => [
-            'lookups' => [
-              'trait',
-            ],
-            'name' => 'intent',
-            'lang' => $this->lang,
-            'exotic' => false,
-            'id' => 'intent',
-            'values' => [],
-            'doc' => 'User-defined entity',
-            'builtin' => false,
-          ],
-        ];
-        $this->expressions = [
-            'data' => [],
-        ];
-        foreach ($contents as $key => $value) {
-            if ('intents' != substr($key, 0, 7)) {
-                continue;
-            }
-            if ('intents/Default Fallback Intent.json' == $key) {
-                continue;
-            }
-            if (substr($key, -15 - strlen($this->lang)) == '_usersays_'.$this->lang.'.json') {
-                $name = substr($key, 8, -15 - strlen($this->lang));
-                foreach ($value as $phrase) {
-                    $entities = [
-                        [
-                            'entity' => 'intent',
-                            'value' => $name,
-                        ],
-                    ];
-                    $nextStart = 0;
-                    $text = '';
-                    foreach ($phrase['data'] as $phraseSegment) {
-                        $text .= $phraseSegment['text'];
-                        if (isset($phraseSegment['alias'])) {
-                            $entities[] = [
-                              'entity' => $phraseSegment['alias'],
-                              'value' => $phraseSegment['text'],
-                              'start' => $nextStart,
-                              'end' => $nextStart + strlen($phraseSegment['text']),
-                            ];
-                        }
-                        $nextStart += strlen($phraseSegment['text']);
-                    }
-                    $this->expressions['data'][] = [
-                        'text' => $text,
-                        'entities' => $entities,
-                    ];
-                }
-            } else {
-                $this->intents['data']['values'][] = [
-                  'value' => $value['name'],
+            if (isset($values[$key])) {
+                $this->entities[$key]['data']['values'] = $values[$key];
+            } elseif (isset($discoveredValues[$key]) && count($discoveredValues[$key]) > 0) {
+                $newValues = [
+                    [
+                        'value' => $discoveredValues[$key][0],
+                        'expressions' => [],
+                    ],
                 ];
+                foreach (array_unique($discoveredValues[$key]) as $j => $value) {
+                    $newValues[0]['expressions'][] = $value;
+                }
+                $this->entities[$key]['data']['values'] = $newValues;
             }
-            unset($contents[$key]);
         }
     }
 
@@ -685,7 +723,6 @@ class Transcoder
             while ($zip_entry = zip_read($zip)) {
                 $name = zip_entry_name($zip_entry);
                 $s = zip_entry_filesize($zip_entry);
-                echo $name.' - '.$s."\n";
                 if (zip_entry_open($zip, $zip_entry)) {
                     $c = zip_entry_read($zip_entry, $s);
                     $contents[$name] = json_decode($c, true);
@@ -774,7 +811,7 @@ class Transcoder
         echo '----------------------------------------'."\n";
     }
 
-    private function prettify(array $contents)
+    private function prettify(array $contents): string
     {
         $json = json_encode($contents, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
