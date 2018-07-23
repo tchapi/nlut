@@ -290,20 +290,37 @@ class Transcoder
         }
     }
 
-    private function toWitArchive(): array
+    private function toWitArchive(string $filename): array
     {
+        $zipName = pathinfo($filename)['filename'];
+
         $contents = [];
-        $contents['app.json'] = $this->appInfo;
-        $contents['expressions.json'] = $this->expressions;
-        foreach ($this->entities as $key => $value) {
-            $contents['entities/'.$key.'.json'] = $value;
+        $contents[$zipName.'/'.'app.json'] = $this->appInfo;
+        $contents[$zipName.'/'.'app.json']['zip-command'] = 'zip '.$filename.' '.$zipName.'/app.json '.$zipName.'/entities/*.json '.$zipName.'/expressions.json';
+
+        // Add quotes to expressions, remove empty entities
+        foreach ($this->expressions['data'] as &$expr) {
+            if (0 === count($expr['entities'])) {
+                unset($expr['entities']);
+                continue;
+            }
+            foreach ($expr['entities'] as &$en) {
+                $en['value'] = '"'.$en['value'].'"';
+            }
         }
-        $contents['entities/intent.json'] = $this->intents;
+
+        foreach ($this->entities as $key => $value) {
+            $contents[$zipName.'/'.'entities/'.$key.'.json'] = $value;
+        }
+        $contents[$zipName.'/'.'entities/intent.json'] = $this->intents;
+
+        // expressions.json MUST be the last file in the zip
+        $contents[$zipName.'/'.'expressions.json'] = $this->expressions;
 
         return $contents;
     }
 
-    private function toAlexaFile(): array
+    private function toAlexaFile(string $filename): array
     {
         $contents = [
             'interactionModel' => [
@@ -428,7 +445,7 @@ class Transcoder
         return $contents;
     }
 
-    private function toDialogFlowArchive(): array
+    private function toDialogFlowArchive(string $filename): array
     {
         $contents = [];
 
@@ -668,7 +685,7 @@ class Transcoder
             while ($zip_entry = zip_read($zip)) {
                 $name = zip_entry_name($zip_entry);
                 $s = zip_entry_filesize($zip_entry);
-
+                echo $name.' - '.$s."\n";
                 if (zip_entry_open($zip, $zip_entry)) {
                     $c = zip_entry_read($zip_entry, $s);
                     $contents[$name] = json_decode($c, true);
@@ -726,15 +743,15 @@ class Transcoder
             switch ($options['format']) {
                 case 'DIALOGFLOW':
                     echo "Exporting to the DialogFlow format\n";
-                    $newContents = $this->toDialogFlowArchive();
+                    $newContents = $this->toDialogFlowArchive($options['export']);
                     break;
                 case 'WIT':
                     echo "Exporting to the Wit format\n";
-                    $newContents = $this->toWitArchive();
+                    $newContents = $this->toWitArchive($options['export']);
                     break;
                 case 'ALEXA':
                     echo "Exporting to the Alexa Skill format\n";
-                    $newContents = $this->toAlexaFile();
+                    $newContents = $this->toAlexaFile($options['export']);
                     break;
                 default:
                     echo 'Error : '.$options['format']." is not a valid format.\n\n";
@@ -757,17 +774,27 @@ class Transcoder
         echo '----------------------------------------'."\n";
     }
 
+    private function prettify(array $contents)
+    {
+        $json = json_encode($contents, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        // Make JSON file exactly the same from the original format (2 spaces, space before semicolon)
+        $json2 = str_replace('": ', '" : ', $json);
+
+        return preg_replace('/^ {4}|\G {4}/Sm', '  ', $json2);
+    }
+
     private function export(array $newContents, string $filename)
     {
         if (self::TYPE_ALEXA === $this->type) {
             $jsonFile = fopen($filename, 'w');
-            fwrite($jsonFile, json_encode($newContents, JSON_PRETTY_PRINT));
+            fwrite($jsonFile, $this->prettify($newContents));
             fclose($jsonFile);
         } else {
             $zip = new ZipArchive();
             if (true === $zip->open($filename, ZipArchive::CREATE)) {
                 foreach ($newContents as $key => $value) {
-                    $zip->addFromString($key, json_encode($value, JSON_PRETTY_PRINT));
+                    $zip->addFromString($key, $this->prettify($value));
                 }
                 $zip->close();
             }

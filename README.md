@@ -17,7 +17,7 @@ _No steps are necessary prior to using the tool._
 
 |                 | Wit   | DialogFlow  | Alexa |
 | --------------- | ----- | ----------- | ----- |
-| **Wit**         |   -   |   -         |   -   |
+| **Wit**         |   ✅  |   -         |   -   |
 | **DialogFlow**  |   -   |   ✅        |   -   |
 | **Alexa**       |   -   |   -         |   ✅  |
 
