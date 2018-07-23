@@ -3,9 +3,13 @@
 
 class Transcoder
 {
-    const TYPE_DIALOG_FLOW = 'DialogFlow';
+    const TYPE_DIALOGFLOW = 'DialogFlow';
     const TYPE_WIT = 'Wit.ai';
     const TYPE_ALEXA = 'Alexa';
+
+    const FORMAT_DIALOGFLOW = 'DIALOGFLOW';
+    const FORMAT_WIT = 'WIT';
+    const FORMAT_ALEXA = 'ALEXA';
 
     private $type = null;
     private $name = null;
@@ -783,27 +787,27 @@ class Transcoder
                         break;
                         case JSON_ERROR_DEPTH:
                             echo $name.' ('.($s / 1000).' kb)';
-                            echo " - Profondeur maximale atteinte \n";
+                            echo " - Maximum depth reached\n";
                         break;
                         case JSON_ERROR_STATE_MISMATCH:
                             echo $name.' ('.($s / 1000).' kb)';
-                            echo " - Inadéquation des modes ou underflow \n";
+                            echo " - Underflow or modes do not match\n";
                         break;
                         case JSON_ERROR_CTRL_CHAR:
                             echo $name.' ('.($s / 1000).' kb)';
-                            echo " - Erreur lors du contrôle des caractères \n";
+                            echo " - Character control error\n";
                         break;
                         case JSON_ERROR_SYNTAX:
                             echo $name.' ('.($s / 1000).' kb)';
-                            echo " - Erreur de syntaxe ; JSON malformé \n";
+                            echo " - Malformed JSON\n";
                         break;
                         case JSON_ERROR_UTF8:
                             echo $name.' ('.($s / 1000).' kb)';
-                            echo " - Caractères UTF-8 malformés, probablement une erreur d\"encodage \n";
+                            echo " - Encoding error - check UTF-8 characters\n";
                         break;
                         default:
                             echo $name.' ('.($s / 1000).' kb)';
-                            echo " - Erreur inconnue \n";
+                            echo " - Unknown error\n";
                         break;
                     }
 
@@ -814,7 +818,7 @@ class Transcoder
             zip_close($zip);
 
             if (isset($contents['agent.json'])) {
-                $this->type = self::TYPE_DIALOG_FLOW;
+                $this->type = self::TYPE_DIALOGFLOW;
                 $this->processDialogFlowArchive($contents);
             } else {
                 $this->type = self::TYPE_WIT;
@@ -836,15 +840,15 @@ class Transcoder
 
         if (isset($options['export']) && isset($options['format'])) {
             switch ($options['format']) {
-                case 'DIALOGFLOW':
+                case self::FORMAT_DIALOGFLOW:
                     echo "Exporting to the DialogFlow format\n";
                     $newContents = $this->toDialogFlowArchive($options['export']);
                     break;
-                case 'WIT':
+                case self::FORMAT_WIT:
                     echo "Exporting to the Wit format\n";
                     $newContents = $this->toWitArchive($options['export']);
                     break;
-                case 'ALEXA':
+                case self::FORMAT_ALEXA:
                     echo "Exporting to the Alexa Skill format\n";
                     $newContents = $this->toAlexaFile($options['export']);
                     break;
@@ -881,7 +885,7 @@ class Transcoder
 
     private function export(array $newContents, string $format, string $filename)
     {
-        if (self::TYPE_ALEXA === $format) {
+        if (self::FORMAT_ALEXA === $format) {
             $jsonFile = fopen($filename, 'w');
             fwrite($jsonFile, $this->prettify($newContents));
             fclose($jsonFile);
