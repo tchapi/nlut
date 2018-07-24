@@ -547,7 +547,7 @@ class Transcoder
         $contents = [];
 
         $contents['package.json'] = [
-            'version' => $this->appInfo['version'],
+            'version' => $this->appInfo['version'].'',
         ];
 
         $contents['agent.json'] = [

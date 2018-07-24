@@ -48,7 +48,7 @@ _As of 23/07/2018_ :
 |                        | _to_ Wit   | _to_ DialogFlow  | _to_ Alexa |
 | ---------------------- | ---------- | ---------------- | ---------- |
 | _from_ **Wit**         |   ✅       |   -              |   ✅       |
-| _from_ **DialogFlow**  |   ✅       |   ✅             |   -        |
+| _from_ **DialogFlow**  |   ✅       |   ✅             |   ✅       |
 | _from_ **Alexa**       |   ✅       |   -              |   ✅       |
 
 ### Known limitations / bugs
