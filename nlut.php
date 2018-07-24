@@ -46,14 +46,15 @@ class Transcoder
         $slotValues = [];
         foreach ($contents['interactionModel']['dialog']['intents'] as $intent) {
             foreach ($intent['slots'] as $slot) {
-                $slots[$slot['name']] = $slot['type'];
+                // Entities must not contain the "." character
+                $slots[$slot['name']] = str_replace('.', '_', $slot['type']);
             }
         }
         $discoveredEntities = array_values($slots);
 
         $this->entities = [];
         foreach ($contents['interactionModel']['languageModel']['types'] as $entity) {
-            $name = $entity['name'];
+            $name = str_replace('.', '_', $entity['name']);
             // Store a value for each entity, for expressions later
             $slotValues[$name] = $entity['values'][0]['name']['value'];
             $values = [];
@@ -130,11 +131,12 @@ class Transcoder
             'data' => [],
         ];
         foreach ($contents['interactionModel']['languageModel']['intents'] as $intent) {
-            if (in_array($intent['name'], ['AMAZON.FallbackIntent', 'AMAZON.CancelIntent', 'AMAZON.HelpIntent', 'AMAZON.StopIntent'])) {
+            $name = str_replace('.', '_', $intent['name']);
+            if (in_array($name, ['AMAZON_FallbackIntent', 'AMAZON_CancelIntent', 'AMAZON_HelpIntent', 'AMAZON_StopIntent'])) {
                 continue;
             }
             $this->intents['data']['values'][] = [
-                'value' => $intent['name'],
+                'value' => $name,
             ];
 
             foreach ($intent['samples'] as $phrase) {
@@ -142,7 +144,7 @@ class Transcoder
                     'entities' => [
                         [
                             'entity' => 'intent',
-                            'value' => $intent['name'],
+                            'value' => $name,
                         ],
                     ],
                 ];
