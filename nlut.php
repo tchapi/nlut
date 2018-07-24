@@ -639,7 +639,7 @@ class Transcoder
                 }
             }
 
-            foreach ($params as $param) {
+            foreach (array_unique($params) as $param) {
                 $parameters[] = [
                       'id' => $this->generateGuid(),
                       'required' => true,
@@ -660,8 +660,14 @@ class Transcoder
                       'resetContexts' => false,
                       'affectedContexts' => [],
                       'parameters' => $parameters,
-                      'messages' => [],
-                      'defaultResponsePlatforms' => [],
+                      'messages' => [
+                        [
+                          'type' => 0,
+                          'lang' => $this->lang,
+                          'speech' => [],
+                        ],
+                      ],
+                      'defaultResponsePlatforms' => new \stdClass(),
                       'speech' => [],
                     ],
                 ],
@@ -723,7 +729,7 @@ class Transcoder
               'affectedContexts' => [],
               'parameters' => [],
               'messages' => [],
-              'defaultResponsePlatforms' => [],
+              'defaultResponsePlatforms' => new \stdClass(),
               'speech' => [],
             ],
           ],
@@ -878,13 +884,19 @@ class Transcoder
 
     private function prettify(array $contents, string $format): string
     {
-        $json = json_encode($contents, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $options = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+        if (self::FORMAT_DIALOGFLOW == $format) {
+            $options |= JSON_HEX_APOS;
+        }
+        $json = json_encode($contents, $options);
 
-        if (self::FORMAT_WIT === $format) {
+        if (self::FORMAT_WIT === $format || self::FORMAT_DIALOGFLOW === $format) {
             // Make JSON file exactly the same from the original format (2 spaces, space before semicolon)
-            $json2 = str_replace('": ', '" : ', $json);
+            if (self::FORMAT_WIT === $format) {
+                $json = str_replace('": ', '" : ', $json);
+            }
 
-            return preg_replace('/^ {4}|\G {4}/Sm', '  ', $json2);
+            return preg_replace('/^ {4}|\G {4}/Sm', '  ', $json);
         } else {
             return $json;
         }
