@@ -419,7 +419,7 @@ class Transcoder
         $contents = [
             'interactionModel' => [
                 'languageModel' => [
-                    'invocationName' => $this->name,
+                    'invocationName' => $this->name ?? 'PLACEHOLDER',
                     'intents' => [
                         [
                             'name' => 'AMAZON.FallbackIntent',
@@ -487,7 +487,7 @@ class Transcoder
                     'type' => $param,
                     'confirmationRequired' => false,
                     'elicitationRequired' => false,
-                    'prompts' => [],
+                    'prompts' => new \stdClass(),
                 ];
             }
 
@@ -495,13 +495,16 @@ class Transcoder
 
             foreach ($phrases as $phrase) {
                 // Construct data from start/end
-                $text = $phrase['text'];
+                // Sample intent utterances must be unique within an intent => strtolower
+                $text = mb_strtolower($phrase['text']);
+                $offset = 0;
                 foreach ($phrase['entities'] as $entity) {
                     if ('intent' == $entity['entity']) {
                         continue;
                     }
                     if (isset($entity['start']) && $entity['start'] > 0) {
-                        $text = substr_replace($text, '{'.$entity['entity'].'}', $entity['start'], $entity['end'] - $entity['start'] + 1);
+                        $text = substr_replace($text, '{'.$entity['entity'].'}', $entity['start'] + $offset, $entity['end'] - $entity['start']);
+                        $offset += strlen($entity['entity']) + 2 - ($entity['end'] - $entity['start']);
                     }
                 }
                 $samples[] = $text;
@@ -514,7 +517,7 @@ class Transcoder
             $contents['interactionModel']['dialog']['intents'][] = [
                 'name' => $name,
                 'confirmationRequired' => false,
-                'prompts' => [],
+                'prompts' => new \stdClass(),
                 'slots' => $slots2,
             ];
         }
@@ -873,27 +876,31 @@ class Transcoder
         echo '----------------------------------------'."\n";
     }
 
-    private function prettify(array $contents): string
+    private function prettify(array $contents, string $format): string
     {
         $json = json_encode($contents, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-        // Make JSON file exactly the same from the original format (2 spaces, space before semicolon)
-        $json2 = str_replace('": ', '" : ', $json);
+        if (self::FORMAT_WIT === $format) {
+            // Make JSON file exactly the same from the original format (2 spaces, space before semicolon)
+            $json2 = str_replace('": ', '" : ', $json);
 
-        return preg_replace('/^ {4}|\G {4}/Sm', '  ', $json2);
+            return preg_replace('/^ {4}|\G {4}/Sm', '  ', $json2);
+        } else {
+            return $json;
+        }
     }
 
     private function export(array $newContents, string $format, string $filename)
     {
         if (self::FORMAT_ALEXA === $format) {
             $jsonFile = fopen($filename, 'w');
-            fwrite($jsonFile, $this->prettify($newContents));
+            fwrite($jsonFile, $this->prettify($newContents, $format));
             fclose($jsonFile);
         } else {
             $zip = new ZipArchive();
             if (true === $zip->open($filename, ZipArchive::CREATE)) {
                 foreach ($newContents as $key => $value) {
-                    $zip->addFromString($key, $this->prettify($value));
+                    $zip->addFromString($key, $this->prettify($value, $format));
                 }
                 $zip->close();
             }
