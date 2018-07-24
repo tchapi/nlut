@@ -539,7 +539,7 @@ class Transcoder
         $contents = [];
 
         $contents['package.json'] = [
-            'version' => $this->appInfo['version'].'',
+            'version' => '1.0.0', // Else, import fails
         ];
 
         $contents['agent.json'] = [
@@ -582,25 +582,6 @@ class Transcoder
           'onePlatformApiVersion' => 'v2',
           'analyzeQueryTextSentiment' => false,
         ];
-
-        foreach ($this->entities as $key => $value) {
-            $contents['entities/'.$key.'.json'] = [
-              'id' => $this->generateGuid(),
-              'name' => $key,
-              'isOverridable' => true,
-              'isEnum' => false,
-              'automatedExpansion' => false,
-            ];
-
-            $contents['entities/'.$key.'_entries_'.$this->lang.'.json'] = [];
-
-            foreach ($value['data']['values'] as $item) {
-                $contents['entities/'.$key.'_entries_'.$this->lang.'.json'][] = [
-                    'value' => $item['value'],
-                    'synonyms' => isset($item['expressions']) ? $item['expressions'] : [],
-                ];
-            }
-        }
 
         foreach ($this->intents['data']['values'] as $key => $value) {
             $intent = $value['value'];
@@ -725,6 +706,22 @@ class Transcoder
           'fallbackIntent' => true,
           'events' => [],
         ];
+
+        foreach ($this->entities as $key => $value) {
+            $entries = [];
+            foreach ($value['data']['values'] as $item) {
+                $entries[] = [
+                    'value' => $item['value'],
+                    'synonyms' => isset($item['expressions']) ? $item['expressions'] : [],
+                ];
+            }
+            $contents['entities/'.$key.'.json'] = [
+              'name' => $key,
+              'isOverridable' => true,
+              'isEnum' => false,
+              'entries' => $entries,
+            ];
+        }
 
         return $contents;
     }
