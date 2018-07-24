@@ -661,21 +661,20 @@ class Transcoder
                     }
                     if (isset($entity['start']) && $entity['start'] > 0) {
                         $datas[] = [
-                            'text' => substr($text, 0 - $offset, $entity['start'] - $offset),
+                            'text' => substr($phrase['text'], $offset, $entity['start'] - $offset),
                             'userDefined' => false,
                         ];
                     }
                     $datas[] = [
-                        'text' => substr($text, $entity['start'] - $offset, $entity['end'] - $offset),
+                        'text' => substr($text, $entity['start'] - $offset, $entity['end'] - $entity['start']),
                         'alias' => $entity['entity'],
                         'meta' => '@'.$entity['entity'],
                         'userDefined' => true,
                     ];
 
                     $text = substr($text, $entity['end'] - $offset);
-                    $offset -= $entity['end'] - $offset;
+                    $offset += $entity['end'] - $offset;
                 }
-
                 $contents['intents/'.$intent.'_usersays_'.$this->lang.'.json'][] = [
                     'data' => $datas,
                     'isTemplate' => false,
