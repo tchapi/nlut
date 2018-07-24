@@ -28,14 +28,6 @@ class Transcoder
         }
     }
 
-    private function generateGuid()
-    {
-        $charid = strtoupper(bin2hex(openssl_random_pseudo_bytes(16)));
-        $guid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($charid, 4));
-
-        return strtolower($guid);
-    }
-
     private function processAlexaJsonFile(array $contents)
     {
         $this->lang = 'fr'; // Default
@@ -641,17 +633,13 @@ class Transcoder
 
             foreach (array_unique($params) as $param) {
                 $parameters[] = [
-                      'id' => $this->generateGuid(),
-                      'required' => true,
                       'dataType' => '@'.$param,
                       'name' => $param,
                       'value' => '$'.$param,
-                      'isList' => false,
                 ];
             }
 
             $contents['intents/'.$intent.'.json'] = [
-                'id' => $this->generateGuid(),
                 'name' => $intent,
                 'auto' => true,
                 'contexts' => [],
@@ -700,7 +688,7 @@ class Transcoder
                         'text' => substr($text, $entity['start'] - $offset, $entity['end'] - $offset),
                         'alias' => $entity['entity'],
                         'meta' => '@'.$entity['entity'],
-                        'userDefined' => false,
+                        'userDefined' => true,
                     ];
 
                     $text = substr($text, $entity['end'] - $offset);
@@ -708,17 +696,15 @@ class Transcoder
                 }
 
                 $contents['intents/'.$intent.'_usersays_'.$this->lang.'.json'][] = [
-                    'id' => $this->generateGuid(),
                     'data' => $datas,
                     'isTemplate' => false,
-                    'count' => 1,
-                    'updated' => 1490878988,
+                    'count' => 0,
+                    'updated' => time(),
                 ];
             }
         }
 
         $contents['intents/Default Fallback Intent.json'] = [
-          'id' => $this->generateGuid(),
           'name' => 'Default Fallback Intent',
           'auto' => true,
           'contexts' => [],
