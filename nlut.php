@@ -672,7 +672,7 @@ class Transcoder
                         ];
                     }
                     $datas[] = [
-                        'text' => substr($text, $entity['start'] - $offset, $entity['end'] - $entity['start']),
+                        'text' => mb_convert_encoding(substr($text, $entity['start'] - $offset, $entity['end'] - $entity['start']), 'UTF-8', 'UTF-8'),
                         'alias' => $entity['entity'],
                         'meta' => '@'.$entity['entity'],
                         'userDefined' => true,
@@ -714,11 +714,13 @@ class Transcoder
 
         foreach ($this->entities as $key => $value) {
             $entries = [];
-            foreach ($value['data']['values'] as $item) {
-                $entries[] = [
-                    'value' => $item['value'],
-                    'synonyms' => isset($item['expressions']) ? $item['expressions'] : [],
-                ];
+            if (isset($value['data']['values'])) {
+                foreach ($value['data']['values'] as $item) {
+                    $entries[] = [
+                        'value' => mb_convert_encoding($item['value'], 'UTF-8', 'UTF-8'),
+                        'synonyms' => isset($item['expressions']) ? array_walk($item['expressions'], function ($i) { return mb_convert_encoding($i, 'UTF-8', 'UTF-8'); }) : [],
+                    ];
+                }
             }
             $contents['entities/'.$key.'.json'] = [
               'name' => $key,
@@ -870,7 +872,7 @@ class Transcoder
         echo '----------------------------------------'."\n";
     }
 
-    private function prettify(array $contents, string $format): string
+    private function prettify(array $contents, string $format, string $filename): string
     {
         $options = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
         if (self::FORMAT_DIALOGFLOW == $format) {
@@ -883,22 +885,22 @@ class Transcoder
             case JSON_ERROR_NONE:
             break;
             case JSON_ERROR_DEPTH:
-                echo "Error: Maximum depth reached\n";
+                echo 'Error: in '.$filename." — Maximum depth reached\n";
             break;
             case JSON_ERROR_STATE_MISMATCH:
-                echo "Error: Underflow or modes do not match\n";
+                echo 'Error: in '.$filename." — Underflow or modes do not match\n";
             break;
             case JSON_ERROR_CTRL_CHAR:
-                echo "Error: Character control error\n";
+                echo 'Error: in '.$filename." — Character control error\n";
             break;
             case JSON_ERROR_SYNTAX:
-                echo "Error: Malformed JSON\n";
+                echo 'Error: in '.$filename." — Malformed JSON\n";
             break;
             case JSON_ERROR_UTF8:
-                echo "Error: Encoding error - check UTF-8 characters\n";
+                echo 'Error: in '.$filename." — Encoding error - check UTF-8 characters\n";
             break;
             default:
-                echo "Error: Unknown error\n";
+                echo 'Error: in '.$filename." — Unknown error\n";
             break;
         }
 
@@ -919,14 +921,14 @@ class Transcoder
         if (self::FORMAT_ALEXA === $format) {
             $filename = $filename.'.json';
             $jsonFile = fopen($filename, 'w');
-            fwrite($jsonFile, $this->prettify($newContents, $format));
+            fwrite($jsonFile, $this->prettify($newContents, $format, $filename));
             fclose($jsonFile);
         } else {
             $zip = new ZipArchive();
             $filename = $filename.'.zip';
             if (true === $zip->open($filename, ZipArchive::CREATE)) {
                 foreach ($newContents as $key => $value) {
-                    $zip->addFromString($key, $this->prettify($value, $format));
+                    $zip->addFromString($key, $this->prettify($value, $format, $key));
                 }
                 $zip->close();
             }
