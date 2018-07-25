@@ -501,7 +501,7 @@ class Transcoder
                         $offset += strlen($entity['entity']) + 2 - ($entity['end'] - $entity['start']);
                     }
                 }
-                $samples[] = $text;
+                $samples[] = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
             }
             $contents['interactionModel']['languageModel']['intents'][] = [
                 'name' => $name,
@@ -519,16 +519,20 @@ class Transcoder
         // Entities
         foreach ($this->entities as $key => $entity) {
             $name = $entity['data']['name'];
-            foreach ($entity['data']['values'] as $value) {
-                $values[] = [
-                    'name' => [
-                        'value' => $value['value'],
-                        'synonyms' => isset($value['expressions']) ? $value['expressions'] : [],
-                    ],
-                ];
+            $values = [];
+            if (isset($entity['data']['values'])) {
+                foreach ($entity['data']['values'] as $value) {
+                    $values[] = [
+                        'name' => [
+                            'value' => mb_convert_encoding($value['value'], 'UTF-8', 'UTF-8'),
+                            'synonyms' => isset($value['expressions']) ? mb_convert_encoding($value['expressions'], 'UTF-8', 'UTF-8') : [],
+                        ],
+                    ];
+                }
             }
+
             $contents['interactionModel']['languageModel']['types'][] = [
-                'name' => $name,
+                'name' => mb_convert_encoding($name, 'UTF-8', 'UTF-8'),
                 'values' => $values,
             ];
         }
@@ -872,7 +876,31 @@ class Transcoder
         if (self::FORMAT_DIALOGFLOW == $format) {
             $options |= JSON_HEX_APOS;
         }
+
         $json = json_encode($contents, $options);
+
+        switch (json_last_error()) {
+            case JSON_ERROR_NONE:
+            break;
+            case JSON_ERROR_DEPTH:
+                echo "Error: Maximum depth reached\n";
+            break;
+            case JSON_ERROR_STATE_MISMATCH:
+                echo "Error: Underflow or modes do not match\n";
+            break;
+            case JSON_ERROR_CTRL_CHAR:
+                echo "Error: Character control error\n";
+            break;
+            case JSON_ERROR_SYNTAX:
+                echo "Error: Malformed JSON\n";
+            break;
+            case JSON_ERROR_UTF8:
+                echo "Error: Encoding error - check UTF-8 characters\n";
+            break;
+            default:
+                echo "Error: Unknown error\n";
+            break;
+        }
 
         if (self::FORMAT_WIT === $format || self::FORMAT_DIALOGFLOW === $format) {
             // Make JSON file exactly the same from the original format (2 spaces, space before semicolon)
