@@ -501,7 +501,7 @@ class Transcoder
                         $offset += strlen($entity['entity']) + 2 - ($entity['end'] - $entity['start']);
                     }
                 }
-                $samples[] = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+                $samples[] = mb_convert_encoding(preg_replace("/(\,|\.|\?|\!|\;|\:)/", '', $text), 'UTF-8', 'UTF-8');
             }
             $contents['interactionModel']['languageModel']['intents'][] = [
                 'name' => $name,
@@ -525,7 +525,7 @@ class Transcoder
                     $values[] = [
                         'name' => [
                             'value' => mb_convert_encoding($value['value'], 'UTF-8', 'UTF-8'),
-                            'synonyms' => isset($value['expressions']) ? mb_convert_encoding($value['expressions'], 'UTF-8', 'UTF-8') : [],
+                            'synonyms' => isset($value['expressions']) ? array_walk($value['expressions'], function ($i) { return mb_convert_encoding($i, 'UTF-8', 'UTF-8'); }) : [],
                         ],
                     ];
                 }
