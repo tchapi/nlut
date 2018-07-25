@@ -30,7 +30,7 @@ Get info on an archive file
 
 Transcode a DialogFlow archive into the Wit format
 
-    ./nlut.php --source MyDFArchive.zip --export MyProject.zip --format WIT
+    ./nlut.php --source MyDFArchive.zip --export MyProject --format WIT
     ----------------------------------------
     This is a DialogFlow archive
     App name     : project-13d59
@@ -40,6 +40,8 @@ Transcode a DialogFlow archive into the Wit format
     ----------------------------------------
     Exporting to the Wit format
     File MyProject.zip written.
+
+> Do not put an extension on the exported file name, it will be put automatically
 
 ### Tests
 

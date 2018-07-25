@@ -854,8 +854,8 @@ class Transcoder
                     exit;
                     break;
             }
-            $this->export($newContents, $options['format'], $options['export']);
-            echo 'File '.$options['export']." written.\n";
+            $filename = $this->export($newContents, $options['format'], $options['export']);
+            echo 'File '.$filename." written.\n";
         }
     }
 
@@ -917,11 +917,13 @@ class Transcoder
     private function export(array $newContents, string $format, string $filename)
     {
         if (self::FORMAT_ALEXA === $format) {
+            $filename = $filename.'.json';
             $jsonFile = fopen($filename, 'w');
             fwrite($jsonFile, $this->prettify($newContents, $format));
             fclose($jsonFile);
         } else {
             $zip = new ZipArchive();
+            $filename = $filename.'.zip';
             if (true === $zip->open($filename, ZipArchive::CREATE)) {
                 foreach ($newContents as $key => $value) {
                     $zip->addFromString($key, $this->prettify($value, $format));
@@ -929,6 +931,8 @@ class Transcoder
                 $zip->close();
             }
         }
+
+        return $filename;
     }
 }
 
